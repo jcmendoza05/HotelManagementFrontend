@@ -15,7 +15,7 @@ import { HotelForm } from "@/features/hotels/components/HotelForm"
 import { RoomCapacitySummary } from "@/features/rooms/components/RoomCapacitySummary"
 import { RoomConfigurator } from "@/features/rooms/components/RoomConfigurator"
 import { RoomFormModal } from "@/features/rooms/components/RoomFormModal"
-import { roomTypeTone } from "@/features/rooms/rules"
+import { roomTypeTone, sumRoomQuantities } from "@/features/rooms/rules"
 import { mapApiError } from "@/lib/api/errors"
 import { formatHotelCode } from "@/lib/format"
 import { useGetHotelQuery, useUpdateHotelMutation, useDeleteHotelMutation } from "@/lib/api/hotelsApi"
@@ -31,6 +31,7 @@ export default function ManageHotelPage() {
   const { showToast } = useToast()
 
   const [roomsPage, setRoomsPage] = useState(1)
+  const [recentlyAddedRoomIds, setRecentlyAddedRoomIds] = useState<number[]>([])
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
   const [deletingRoom, setDeletingRoom] = useState<Room | null>(null)
   const [isDeleteHotelOpen, setIsDeleteHotelOpen] = useState(false)
@@ -48,6 +49,7 @@ export default function ManageHotelPage() {
   const [deleteRoom, { isLoading: isDeletingRoom }] = useDeleteRoomMutation()
 
   const rooms = roomsData?.data ?? []
+  const remainingCapacity = hotel ? Math.max(hotel.max_rooms - sumRoomQuantities(rooms), 0) : 0
 
   async function handleHotelSubmit(values: HotelFormValues) {
     setHotelFieldErrors({})
@@ -69,6 +71,7 @@ export default function ManageHotelPage() {
       })
       return
     }
+    setRecentlyAddedRoomIds((current) => [...current, result.data.id])
     showToast({ tone: "success", title: "Habitación agregada correctamente" })
   }
 
@@ -182,7 +185,12 @@ export default function ManageHotelPage() {
                 {rooms.map((room, index) => (
                   <tr key={room.id} className={index % 2 === 1 ? "bg-surface-container-low" : undefined}>
                     <td className="px-4 py-3">
-                      <Chip label={room.room_type} tone={roomTypeTone(room.room_type)} />
+                      <div className="flex items-center gap-2">
+                        <Chip label={room.room_type} tone={roomTypeTone(room.room_type)} />
+                        {recentlyAddedRoomIds.includes(room.id) ? (
+                          <Chip label="Nueva" tone="tertiary" className="text-[10px]" />
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-on-surface-variant">{room.accommodation}</td>
                     <td className="px-4 py-3 font-semibold text-on-surface">{room.quantity}</td>
@@ -225,7 +233,7 @@ export default function ManageHotelPage() {
         <div className="mb-6">
           <RoomCapacitySummary rooms={rooms} maxRooms={hotel.max_rooms} />
         </div>
-        <RoomConfigurator onAddRow={handleAddRoom} />
+        <RoomConfigurator onAddRow={handleAddRoom} disabled={remainingCapacity <= 0} />
       </Card>
 
       <RoomFormModal hotelId={hotelId} room={editingRoom} onClose={() => setEditingRoom(null)} />

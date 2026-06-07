@@ -49,4 +49,19 @@ describe("RoomConfigurator", () => {
     await userEvent.click(screen.getByRole("button", { name: /Asignar a configuración/ }))
     expect(await screen.findByText("Selecciona un tipo de habitación")).toBeInTheDocument()
   })
+
+  it("deshabilita los campos y el botón cuando ya no hay capacidad disponible", () => {
+    render(<RoomConfigurator onAddRow={vi.fn()} disabled />)
+    expect(screen.getByLabelText("Tipo")).toBeDisabled()
+    expect(screen.getByLabelText("Acomodación")).toBeDisabled()
+    expect(screen.getByLabelText("Cantidad")).toBeDisabled()
+    expect(screen.getByRole("button", { name: /Asignar a configuración/ })).toBeDisabled()
+  })
+
+  it("no llama a onAddRow cuando está deshabilitado", async () => {
+    const onAddRow = vi.fn()
+    render(<RoomConfigurator onAddRow={onAddRow} disabled />)
+    await userEvent.click(screen.getByRole("button", { name: /Asignar a configuración/ }))
+    expect(onAddRow).not.toHaveBeenCalled()
+  })
 })

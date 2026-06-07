@@ -14,9 +14,10 @@ import { roomConfigRowSchema, type RoomConfigRowValues } from "../schemas"
 
 interface RoomConfiguratorProps {
   onAddRow: (row: RoomConfigRowValues) => void
+  disabled?: boolean
 }
 
-export function RoomConfigurator({ onAddRow }: RoomConfiguratorProps) {
+export function RoomConfigurator({ onAddRow, disabled = false }: RoomConfiguratorProps) {
   const { data: roomTypes, isLoading, isError } = useGetRoomTypesQuery()
 
   const {
@@ -56,12 +57,13 @@ export function RoomConfigurator({ onAddRow }: RoomConfiguratorProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SelectField
           label="Tipo"
           placeholder="Selecciona un tipo"
           error={errors.room_type?.message}
+          disabled={disabled}
           options={roomTypes.map((entry) => ({ value: entry.value, label: entry.value }))}
           {...register("room_type")}
         />
@@ -69,16 +71,23 @@ export function RoomConfigurator({ onAddRow }: RoomConfiguratorProps) {
           label="Acomodación"
           placeholder={selectedType ? "Selecciona una acomodación" : "Primero elige un tipo"}
           error={errors.accommodation?.message}
-          disabled={accommodationOptions.length === 0}
+          disabled={disabled || accommodationOptions.length === 0}
           options={accommodationOptions.map((option) => ({ value: option, label: option }))}
           {...register("accommodation")}
         />
-        <TextField label="Cantidad" type="number" min={1} error={errors.quantity?.message} {...register("quantity")} />
+        <TextField
+          label="Cantidad"
+          type="number"
+          min={1}
+          error={errors.quantity?.message}
+          disabled={disabled}
+          {...register("quantity")}
+        />
       </div>
-      <Button type="submit" variant="secondary" className="self-start">
+      <Button type="button" variant="secondary" className="self-start" disabled={disabled} onClick={handleSubmit(submit)}>
         <PlusCircle className="h-4 w-4" />
         Asignar a configuración
       </Button>
-    </form>
+    </div>
   )
 }
